@@ -30,6 +30,7 @@ def haversine(lon1, lat1, lon2, lat2):
 
 # This is the main function
 def generate_list_of_providers(param, data):
+  data = [value for key, value in data.items()]
   if param['TestingAvailability'][0] == "True":
     data = [x for x in data if x['testing_availability'] == True]
   if param['BedAvailability'][0] == "True":
@@ -47,10 +48,11 @@ def generate_list_of_providers(param, data):
   assert len(final_providers) == 10
   for provider in final_providers:
     index = final_provider_list[0].index(provider['properties']['id'])
-    print(index, type(index))
     provider['distance'] = final_provider_list[1][index]
-
+  final_providers = sorted(final_providers, key=lambda x: x['distance'])
   print(final_providers)
+  return final_providers
+
 
 def download_geojson():
   data = requests.get(
@@ -58,11 +60,15 @@ def download_geojson():
   data_object = json.loads(data.text)
   facilities = data_object['features']
   booleans = [True, False]
+  final_data = {}
   for facility in facilities:
-    facility['testing_availability'] = np.random.choice(booleans)
-    facility['bed_availability'] = np.random.choice(booleans)
-    facility['ventilator_availability'] = np.random.choice(booleans)
-  return facilities
+    facility['testing_availability'] = bool(np.random.choice(booleans))
+    facility['bed_availability'] = bool(np.random.choice(booleans))
+    facility['ventilator_availability'] = bool(np.random.choice(booleans))
+    final_data[facility['properties']['global_id']] = facility
+  with open('nigeria_data.json', 'w') as f:
+    json.dump(final_data, f, indent=2)
+  return final_data
 
 if __name__ == "__main__":
   data = download_geojson()
